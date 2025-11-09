@@ -76,20 +76,25 @@ export const useVideoRecorder = (canvas?: HTMLCanvasElement) => {
         mediaRecorder.start(100); // Collect data every 100ms
         setIsRecording(true);
 
+        // Calculate exact duration for perfect loop
+        // We need to stop 1 frame before the end so it loops seamlessly
+        const frameTime = 1 / fps; // Duration of one frame in seconds
+        const actualDuration = duration - frameTime; // Stop 1 frame early
+
         // Track progress
         const startTime = Date.now();
         const progressInterval = setInterval(() => {
           const elapsed = (Date.now() - startTime) / 1000;
-          const progressPercent = Math.min((elapsed / duration) * 100, 100);
+          const progressPercent = Math.min((elapsed / actualDuration) * 100, 100);
           setProgress(progressPercent);
 
-          if (elapsed >= duration) {
+          if (elapsed >= actualDuration) {
             clearInterval(progressInterval);
             stopRecording();
           }
         }, 100);
 
-        console.log(`Recording started: ${duration}s at ${fps}fps`);
+        console.log(`Recording started: ${actualDuration.toFixed(3)}s at ${fps}fps (${Math.floor(actualDuration * fps)} frames for perfect loop)`);
       } catch (error) {
         console.error('Failed to start recording:', error);
         setIsRecording(false);

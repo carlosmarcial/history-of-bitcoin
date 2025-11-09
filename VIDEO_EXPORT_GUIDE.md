@@ -59,7 +59,21 @@ The camera takes **exactly 60 seconds** to complete one full loop:
 - Uses GSAP with linear easing
 - Set to `repeat: -1` (infinite loop)
 
-By recording for 60 seconds, the end frame seamlessly connects to the start frame!
+### How We Achieve Perfect Looping
+
+The recorder automatically stops **1 frame before** the full duration:
+
+**At 60 FPS:**
+- Duration: 60 seconds = 3600 frames
+- **Records: 3599 frames** (stops at 59.983s)
+- Frame 3599 → Frame 0 = seamless loop ✅
+
+**At 30 FPS:**
+- Duration: 60 seconds = 1800 frames
+- **Records: 1799 frames** (stops at 59.967s)
+- Frame 1799 → Frame 0 = seamless loop ✅
+
+This ensures the last frame naturally transitions to the first frame with no visible jump!
 
 ### Keyboard Shortcuts
 
