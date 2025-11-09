@@ -1,15 +1,14 @@
 import { useState, useCallback, useRef } from 'react';
-import { useThree } from '@react-three/fiber';
 
 interface RecordingOptions {
   duration?: number; // seconds
   fps?: number;
   quality?: number; // 0-1
   format?: 'webm' | 'mp4';
+  canvas?: HTMLCanvasElement;
 }
 
-export const useVideoRecorder = () => {
-  const { gl } = useThree();
+export const useVideoRecorder = (canvas?: HTMLCanvasElement) => {
   const [isRecording, setIsRecording] = useState(false);
   const [progress, setProgress] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -23,9 +22,14 @@ export const useVideoRecorder = () => {
         format = 'webm',
       } = options;
 
+      if (!canvas) {
+        console.error('Canvas not available for recording');
+        return;
+      }
+
       try {
         // Get canvas stream
-        const stream = gl.domElement.captureStream(fps);
+        const stream = canvas.captureStream(fps);
 
         // Configure MediaRecorder
         const mimeType = format === 'mp4' ? 'video/mp4' : 'video/webm;codecs=vp9';
@@ -91,7 +95,7 @@ export const useVideoRecorder = () => {
         setIsRecording(false);
       }
     },
-    [gl]
+    [canvas]
   );
 
   const stopRecording = useCallback(() => {

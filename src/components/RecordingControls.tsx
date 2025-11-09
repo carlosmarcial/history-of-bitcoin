@@ -1,10 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useVideoRecorder } from '../hooks/useVideoRecorder';
 
 export const RecordingControls = () => {
-  const { isRecording, progress, startRecording, stopRecording } = useVideoRecorder();
+  const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null);
+  const { isRecording, progress, startRecording, stopRecording } = useVideoRecorder(canvas || undefined);
   const [duration, setDuration] = useState(60); // Default 60s for full loop
   const [fps, setFps] = useState(60);
+
+  // Find the canvas element on mount
+  useEffect(() => {
+    const canvasElement = document.querySelector('canvas');
+    if (canvasElement) {
+      setCanvas(canvasElement);
+    }
+  }, []);
 
   return (
     <div
