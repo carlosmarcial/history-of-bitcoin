@@ -68,6 +68,7 @@ export const useVideoRecorder = (canvas?: HTMLCanvasElement) => {
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
 
+          console.log('Recording complete! File downloaded.');
           setIsRecording(false);
           setProgress(0);
         };
@@ -80,21 +81,35 @@ export const useVideoRecorder = (canvas?: HTMLCanvasElement) => {
         // We need to stop 1 frame before the end so it loops seamlessly
         const frameTime = 1 / fps; // Duration of one frame in seconds
         const actualDuration = duration - frameTime; // Stop 1 frame early
+        const actualDurationMs = actualDuration * 1000; // Convert to milliseconds
+
+        console.log(`Recording started: ${actualDuration.toFixed(3)}s at ${fps}fps (${Math.floor(actualDuration * fps)} frames for perfect loop)`);
+        console.log(`Will auto-stop in ${actualDurationMs}ms`);
 
         // Track progress
         const startTime = Date.now();
+
         const progressInterval = setInterval(() => {
           const elapsed = (Date.now() - startTime) / 1000;
           const progressPercent = Math.min((elapsed / actualDuration) * 100, 100);
           setProgress(progressPercent);
-
-          if (elapsed >= actualDuration) {
-            clearInterval(progressInterval);
-            stopRecording();
-          }
         }, 100);
 
-        console.log(`Recording started: ${actualDuration.toFixed(3)}s at ${fps}fps (${Math.floor(actualDuration * fps)} frames for perfect loop)`);
+        // Auto-stop with precise setTimeout
+        const stopTimeout = setTimeout(() => {
+          console.log('Auto-stopping recording...');
+          if (progressInterval) clearInterval(progressInterval);
+
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop();
+            mediaRecorderRef.current = null;
+          }
+        }, actualDurationMs);
+
+        // Store timeout ref for cleanup
+        (mediaRecorder as any)._stopTimeout = stopTimeout;
+        (mediaRecorder as any)._progressInterval = progressInterval;
+
       } catch (error) {
         console.error('Failed to start recording:', error);
         setIsRecording(false);
@@ -104,11 +119,24 @@ export const useVideoRecorder = (canvas?: HTMLCanvasElement) => {
   );
 
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+    if (mediaRecorderRef.current) {
+      // Clear any active timers
+      if ((mediaRecorderRef.current as any)._stopTimeout) {
+        clearTimeout((mediaRecorderRef.current as any)._stopTimeout);
+      }
+      if ((mediaRecorderRef.current as any)._progressInterval) {
+        clearInterval((mediaRecorderRef.current as any)._progressInterval);
+      }
+
+      // Stop recording if active
+      if (mediaRecorderRef.current.state === 'recording') {
+        console.log('Manually stopping recording...');
+        mediaRecorderRef.current.stop();
+      }
+
       mediaRecorderRef.current = null;
     }
-  }, [isRecording]);
+  }, []);
 
   return {
     isRecording,
